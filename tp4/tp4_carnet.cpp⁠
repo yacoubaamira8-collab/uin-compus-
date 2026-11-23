@@ -1,0 +1,282 @@
+#include <algorithm>
+#include <cassert>
+#include <cstddef>
+#include <iostream>
+#include <print>
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <vector>
+
+namespace {
+
+std::string lireLigne(std::string_view invite)
+{
+    std::print("{}", invite);
+    std::string ligne;
+    if (!std::getline(std::cin, ligne)) {
+        return {};
+    }
+    return ligne;
+}
+
+bool analyserEntier(const std::string& texte, int& sortie)
+{
+    std::istringstream iss{texte};
+    int val{};
+    char reste{};
+    if ((iss >> val) && !(iss >> reste)) {
+        sortie = val;
+        return true;
+    }
+    return false;
+}
+
+bool analyserReel(std::string texte, double& sortie)
+{
+    for (char& c : texte) {
+        if (c == ',') {
+            c = '.';
+        }
+    }
+    std::istringstream iss{texte};
+    double val{};
+    char reste{};
+    if ((iss >> val) && !(iss >> reste)) {
+        sortie = val;
+        return true;
+    }
+    return false;
+}
+
+} // namespace
+
+[[nodiscard]] int lireEntier(std::string_view invite, int min, int max)
+{
+    while (std::cin) {
+        const std::string ligne = lireLigne(invite);
+        if (!std::cin) {
+            break;
+        }
+        int valeur{};
+        if (!analyserEntier(ligne, valeur)) {
+            std::println("Saisie invalide : entrez un nombre entier.");
+        } else if (valeur < min || valeur > max) {
+            std::println("La valeur doit être comprise entre {} et {}.", min, max);
+        } else {
+            return valeur;
+        }
+    }
+    return min;
+}
+
+[[nodiscard]] double lireNote(std::string_view invite, double min = 0.0, double max = 20.0)
+{
+    while (std::cin) {
+        const std::string ligne = lireLigne(invite);
+        if (!std::cin) {
+            break;
+        }
+        double note{};
+        if (!analyserReel(ligne, note)) {
+            std::println("Saisie invalide : entrez un nombre (ex. 12.5 ou 12,5).");
+        } else if (note < min || note > max) {
+            std::println("La note doit être comprise entre {:.2f} et {:.2f}.", min, max);
+        } else {
+            return note;
+        }
+    }
+    return min;
+}
+
+namespace carnet {
+
+enum class Ordre {
+    Croissant,
+    Decroissant
+};
+
+struct Statistiques {
+    double minimum{};
+    double maximum{};
+    double moyenne{};
+    int nbValidees{};
+};
+
+/// @pre notes n'est pas vide
+[[nodiscard]] Statistiques calculerStatistiques(const std::vector<double>& notes)
+{
+    assert(!notes.empty() && "calculerStatistiques() : la liste de notes est vide");
+
+    const auto [mini, maxi] = std::ranges::minmax(notes);
+    double somme{0.0};
+    int validees{0};
+
+    for (double n : notes) {
+        somme += n;
+        if (n >= 10.0) {
+            ++validees;
+        }
+    }
+
+    const double moy = somme / static_cast<double>(notes.size());
+    return Statistiques{mini, maxi, moy, validees};
+}
+
+void appliquerBonus(std::vector<double>& notes, double bonus)
+{
+    std::ranges::for_each(notes, [bonus](double& n) {
+        n = std::clamp(n + bonus, 0.0, 20.0);
+    });
+}
+
+void trier(std::vector<double>& notes, Ordre ordre)
+{
+    if (ordre == Ordre::Croissant) {
+        std::ranges::sort(notes, [](double a, double b) {
+            return a < b;
+        });
+    } else {
+        std::ranges::sort(notes, [](double a, double b) {
+            return a > b;
+        });
+    }
+}
+
+void afficherNotes(const std::vector<double>& notes)
+{
+    if (notes.empty()) {
+        std::println("Aucune note enregistrée.");
+        return;
+    }
+
+    for (std::size_t i{0}; i < notes.size(); ++i) {
+        std::println("{:>3}. {:6.2f}", i + 1, notes[i]);
+    }
+}
+
+void ajouter(std::vector<double>& notes)
+{
+    notes.push_back(lireNote("Note à ajouter (0 à 20) : "));
+    std::println("Note ajoutée.");
+}
+
+void modifier(std::vector<double>& notes)
+{
+    if (notes.empty()) {
+        std::println("Aucune note à modifier.");
+        return;
+    }
+
+    afficherNotes(notes);
+    const int rang = lireEntier("Numéro de la note à modifier : ", 1, static_cast<int>(notes.size()));
+    const double nouvelleNote = lireNote("Nouvelle valeur (0 à 20) : ");
+    notes[static_cast<std::size_t>(rang - 1)] = nouvelleNote;
+    std::println("Note modifiée.");
+}
+
+void supprimer(std::vector<double>& notes)
+{
+    if (notes.empty()) {
+        std::println("Aucune note à supprimer.");
+        return;
+    }
+
+    afficherNotes(notes);
+    const int rang = lireEntier("Numéro de la note à supprimer : ", 1, static_cast<int>(notes.size()));
+    notes.erase(notes.begin() + (rang - 1));
+    std::println("Note supprimée.");
+}
+
+void trierMenu(std::vector<double>& notes)
+{
+    if (notes.empty()) {
+        std::println("Aucune note à trier.");
+        return;
+    }
+
+    const int sens = lireEntier("1. Croissant  2. Décroissant : ", 1, 2);
+    const Ordre ordre = (sens == 1) ? Ordre::Croissant : Ordre::Decroissant;
+    trier(notes, ordre);
+    std::println("Notes triées.");
+}
+
+void afficherStatistiques(const std::vector<double>& notes)
+{
+    if (notes.empty()) {
+        std::println("Aucune note pour calculer les statistiques.");
+        return;
+    }
+
+    const auto [mini, maxi, moyenne, validees] = calculerStatistiques(notes);
+    std::println("Min : {:.2f} | Max : {:.2f} | Moyenne : {:.2f} | Validées (>=10) : {}/{}",
+                 mini, maxi, moyenne, validees, notes.size());
+}
+
+void appliquerBonusMenu(std::vector<double>& notes)
+{
+    if (notes.empty()) {
+        std::println("Aucune note à laquelle appliquer un bonus.");
+        return;
+    }
+
+    const double bonus = lireNote("Valeur du bonus (ex. 0.5 ou -1.0) : ", -20.0, 20.0);
+    appliquerBonus(notes, bonus);
+    std::println("Bonus appliqué (borné entre 0.00 et 20.00).");
+}
+
+[[nodiscard]] int afficherMenu()
+{
+    std::println("\n=== Carnet de notes ===");
+    std::println("1. Ajouter une note");
+    std::println("2. Afficher les notes");
+    std::println("3. Modifier une note");
+    std::println("4. Supprimer une note");
+    std::println("5. Trier les notes (croissant / décroissant)");
+    std::println("6. Statistiques");
+    std::println("7. Appliquer un bonus");
+    std::println("0. Quitter");
+    return lireEntier("Votre choix : ", 0, 7);
+}
+
+} // namespace carnet
+
+int main()
+{
+    std::vector<double> notes;
+    int choix{};
+
+    do {
+        choix = carnet::afficherMenu();
+        switch (choix) {
+        case 1:
+            carnet::ajouter(notes);
+            break;
+        case 2:
+            carnet::afficherNotes(notes);
+            break;
+        case 3:
+            carnet::modifier(notes);
+            break;
+        case 4:
+            carnet::supprimer(notes);
+            break;
+        case 5:
+            carnet::trierMenu(notes);
+            break;
+        case 6:
+            carnet::afficherStatistiques(notes);
+            break;
+        case 7:
+            carnet::appliquerBonusMenu(notes);
+            break;
+        case 0:
+            std::println("Fermeture du carnet de notes.");
+            break;
+        default:
+            break;
+        }
+    } while (choix != 0);
+
+    return 0;
+}
