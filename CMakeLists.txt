@@ -1,38 +1,19 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimun_required(VERSION 3.25)
+projet(uin-campus LANGUAGES CXX)
 
-project(UINCampus
-    VERSION 0.1.0
-    DESCRIPTION "Système de gestion académique de l'UIN"
-    LANGUAGES CXX
+set(CMAKE_CXX_STANDAR 23)
+set(CMAKE_CXX_STANDAR_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+add_library(uincampus_core)
+    src/version.cpp
+    src/regles.cpp
+    src/saisie.cpp
+    src/calculs.cpp
 )
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-option(UIN_ACTIVER_SANITIZERS "Activer AddressSanitizer et UBSan" OFF)
-
-add_library(uincampus_options INTERFACE)
-target_compile_features(uincampus_options INTERFACE cxx_std_23)
-
-if(MSVC)
-    target_compile_options(uincampus_options INTERFACE /W4 /permissive-)
-else()
-    target_compile_options(uincampus_options INTERFACE
-        -Wall -Wextra -pedantic -Wshadow -Wconversion)
-endif()
-
-if(UIN_ACTIVER_SANITIZERS AND NOT MSVC)
-    target_compile_options(uincampus_options INTERFACE
-        -fsanitize=address,undefined -fno-omit-frame-pointer)
-    target_link_options(uincampus_options INTERFACE
-        -fsanitize=address,undefined)
-endif()
-
-add_library(uincampus_core
-    src/version.cpp)
-
-target_include_directories(uincampus_core PUBLIC ${PROJECT_SOURCE_DIR}/include)
-target_compile_definitions(uincampus_core PRIVATE UIN_VERSION="${PROJECT_VERSION}")
-target_link_libraries(uincampus_core PRIVATE uincampus_options)
-
+target_include_directories(uincampus_core PUBLIC includ)
+target_compile_options(uincampus_core PRIVATE -wall -wextra -wpedantic)
 add_executable(uin-campus app/main.cpp)
-target_link_libraries(uin-campus PRIVATE uincampus_core uincampus_options)
+target_link_libraries(uin-campus PRIVATE uincampus_core)
+target_compile_option(uin-campus PRIVATE -wall -wextra -wpedantic)
 
