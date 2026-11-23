@@ -1,48 +1,78 @@
-#include uincampus/saisie.npp
+
+#include "uincampus/saisie.hpp"
 #include "uincampus/regles.hpp"
-#include ‹iostream›
-#include ‹sstream>
+#include <iostream>
+#include <sstream>
 namespace uin {
-namespace ‹ // espace de noms anonyme : fonctions internes à ce fichier (chapitre 4)
-std: :string lireLigne(std: :string_view invite)
-std: : cout « invite;
-std: : string ligne;
-std: :getline(std::cin, ligne);
-return ligne:
-bool estEntierStrict(const std: : string& texte, int& valeur)
-sta. istringstream tux textes;
-char restes;
-return (flux > valeur) && ! (flux > reste);
-bool estreelstrict sta::string texte, double& valeur)
+namespace {
+struct EntierLu {
+bool valide{false};
+int valeur{0};
+};
+struct ReelLu {
+bool valide{false};
+double valeur{0.0};
+};
+std::string lireLigne(std::string_view invite)
+{
+std::cout << invite;
+std::string ligne;
+std::getline(std::cin, ligne);
+return ligne;
+}
+[[nodiscard]] EntierLu versEntier(const std::string& texte)
+{
+std::istringstream flux{texte};
+int valeur{};
+char reste{};
+const bool valide = (flux >> valeur) && !(flux >> reste);
+return {valide, valeur};
+}
+[[nodiscard]] ReelLu versReel(std::string texte)
+{
 for (char& c : texte) {
-if (c == ',') { ='.'; }
-std: :istringstream flux texte?:
-char restes;
-return (flux > valeur) && ! (flux > reste);
-3 l namespace
-sta. .string Irelexte(sta..scring_view Invite)
+if (c == ',') {
+c = '.';
+}
+}
+std::istringstream flux{texte};
+double valeur{};
+char reste{};
+const bool valide = (flux >> valeur) && !(flux >> reste);
+return {valide, valeur};
+}
+} // namespace
+std::string lireTexte(std::string_view invite)
+{
 return lireLigne(invite);
-int lireentier(sta::string view invite, int mın, int max)
-while (std: cin) {
-const std: : string ligne = lireLigne (invite);
-int valeur();
-if (!estEntierStrict(ligne, valeur)) {
-std:: cout « " Saisie invalide : entrez un nombre entier. \n";
-} else if (valeur ‹ min || valeur › max) {
-std:: cout ‹‹ " La valeur doit être comprise entre " ‹< min ‹‹ " et " ‹< max ‹< ".\n";
+}
+int lireEntier(std::string_view invite, int min, int max)
+{
+  while (std::cin) {
+const auto [valide, valeur] = versEntier(lireLigne(invite));
+if (!valide) {
+std::cout << " Saisie invalide : entrez un nombre entier.\n";
+} else if (valeur < min || valeur > max) {
+std::cout << " La valeur doit être comprise entre " << min << " et " << max << ".\n";
 } else {
 return valeur;
+}
+}
 return min;
-/tn dentree: valeur de repli (sera remplacee par une exception au chapitre 15)
-double lireNote(std:: string_view invite)
+}
+double lireNote(std::string_view invite)
+{
 while (std::cin) {
-  const std: : string ligne = lireLigne (invite);
-double note();
-if (!estReelstrict(ligne, note)) {
-std:: cout « " Saisie invalide : entrez un nombre (ex. 12.5 ou 12,5). In";
-› else it (!estnotevalide(note)) {
-std::cout ‹‹" La note doit être comprise entre " ‹‹ noteMin ‹‹ " et " ‹‹ noteMax ‹< ".\n":
-else
-return note.
+const auto [valide, note] = versReel(lireLigne(invite));
+if (!valide) {
+std::cout << " Saisie invalide : entrez un nombre (ex. 12.5 ou 12,5).\n";
+} else if (!estNoteValide(note)) {
+std::cout << " La note doit être comprise entre " << noteMin << " et " << noteMax << ".\n";
+} else {
+return note;
+}
+}
 return noteMin;
-} / namespace uin
+}
+} // namespace uin
+
